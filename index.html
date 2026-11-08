@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mercado</title>
+<meta name="theme-color" content="#1F7A4D">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#FAFAF7;--card:#fff;--ink:#14231A;--mut:#5B6B62;--line:#DDE3DD;--ac:#1F7A4D;--acink:#fff;--warn:#C2410C;--chip:#EEF1EC;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1511;--card:#17211B;--ink:#EAF2EC;--mut:#9DB0A3;--line:#2A3830;--chip:#1F2C24;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:720px;margin:0 auto;padding:16px 16px 120px}
+h1{font-size:21px;margin:0}h2{font-size:17px;margin:0 0 12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.logo{display:inline-flex;width:44px;height:44px;border-radius:12px;background:var(--ac);color:var(--acink);align-items:center;justify-content:center;font-size:24px;margin-right:10px;vertical-align:middle}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:12px}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:0 12px;height:46px;width:100%}
+input[type=file]{padding:9px 12px;height:auto}
+.btn{border:0;border-radius:999px;background:var(--ac);color:var(--acink);font:600 15px inherit;font-family:inherit;min-height:46px;padding:0 20px;cursor:pointer}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--ink)}.btn.sm{min-height:40px;padding:0 14px;font-size:13px}.btn:disabled{opacity:.5}
+.tabs{display:flex;gap:4px;background:var(--chip);padding:4px;border-radius:999px;margin-bottom:14px}
+.tabs button{flex:1;border:0;background:none;color:var(--mut);border-radius:999px;font:600 14px inherit;font-family:inherit;min-height:44px;cursor:pointer}
+.tabs button.on{background:var(--ac);color:var(--acink)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 14px;min-height:40px;border-radius:999px;font:500 13px inherit;font-family:inherit;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.p{border-top:1px solid var(--line);padding:12px 0}.p:first-child{border-top:0}
+.pn{font-weight:700}.meta{font-size:12px;color:var(--mut)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--mut);margin-left:6px}
+.tag.w{color:var(--warn)}.tag.g{color:var(--ac)}
+.v{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0 0;font-size:14px}
+.pr{font-weight:700}.old{text-decoration:line-through;color:var(--mut);font-size:12px;margin-right:6px}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{width:40px;height:40px;border-radius:20px;border:0;background:var(--ac);color:var(--acink);font-size:20px;cursor:pointer}
+.qty button.m{background:var(--chip);color:var(--ink)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.grid{grid-template-columns:1fr}}
+.pc{border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--bg)}
+.img{width:100%;height:120px;object-fit:cover;border-radius:10px;background:var(--chip);display:block;margin-bottom:8px}
+.sec{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--warn);margin:0 0 10px}
+.cart{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
+.cart div{max-width:720px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:5}
+.sheet{background:var(--card);width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:20px}
+.msg{font-size:14px;color:var(--warn);min-height:20px;margin-top:8px}
+.empty{color:var(--mut);text-align:center;padding:24px 0}
+.hide{display:none!important}.login{max-width:400px;margin:8vh auto 0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="vM" class="login card hide"><h1 style="margin-bottom:12px">Qual é o seu mercado?</h1>
+<label>Código do mercado<input id="mc" type="text" placeholder="Ex.: mercado-nextgen"></label>
+<button class="btn" id="mb" style="width:100%" type="button">Continuar</button><div class="msg" id="mm" role="alert"></div></div>
+
+<div id="vAuth" class="login card hide">
+<div style="margin-bottom:14px"><span class="logo" id="bi"></span><h1 style="display:inline;vertical-align:middle" id="bn"></h1></div>
+<div class="tabs"><button class="on" data-am="in" type="button">Entrar</button><button data-am="up" type="button">Criar conta</button></div>
+<div id="upf" class="hide"><label>Nome<input id="an" type="text" autocomplete="given-name"></label><label>Sobrenome<input id="as" type="text" autocomplete="family-name"></label></div>
+<label>WhatsApp (com DDD)<input id="aw" type="tel" inputmode="numeric" placeholder="(11) 91234-5678" autocomplete="tel"></label>
+<label>Senha<input id="ap" type="password" autocomplete="current-password" placeholder="mínimo 6 caracteres"></label>
+<button class="btn" id="ab" style="width:100%" type="button">Entrar</button><div class="msg" id="am" role="alert"></div>
+<button class="btn ghost inst hide" style="width:100%;margin-top:10px" type="button">Instalar app no celular</button>
+<div class="meta hide" id="ios" style="margin-top:10px">No iPhone: abra no Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.</div></div>
+
+<div id="vApp" class="hide">
+<div class="top"><div><span class="logo" id="hi"></span><h1 style="display:inline;vertical-align:middle" id="hn"></h1><div class="meta" id="hw"></div></div><div class="bar" style="margin:0"><button class="btn sm inst hide" type="button">Instalar app</button><button class="btn ghost sm" id="out" type="button">Sair</button></div></div>
+<div class="tabs"><button class="on" data-t="loja" type="button">Loja</button><button data-t="ped" type="button">Meus pedidos</button></div>
+<section id="loja"><div id="promoBox"></div>
+<label><span>Buscar produto</span><input id="q" type="search" placeholder="O que você procura?"></label>
+<div class="chips" id="chips"></div><div id="shop"></div></section>
+<section id="ped" class="hide"><div id="olist"></div></section>
+</div>
+</div>
+
+<div class="cart hide" id="cartbar"><div><span id="ci"></span><span><span id="ct"></span> <button class="btn sm" id="go" type="button">Finalizar</button></span></div></div>
+<div class="modal hide" id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, runTransaction } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyC8bpWFnRiL-PLc5ky63171TfaId0Ygb3s",authDomain:"my-market-9984a.firebaseapp.com",projectId:"my-market-9984a",storageBucket:"my-market-9984a.firebasestorage.app",messagingSenderId:"654372852018",appId:"1:654372852018:web:7a7e85ce30b02cd8ee872b"};
+const app=initializeApp(cfg,"cliente"),auth=getAuth(app),db=getFirestore(app);
+const $=i=>document.getElementById(i);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const oid=n=>"#"+String(n).padStart(4,"0");
+const fdt=t=>new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
+const errTxt=e=>({"auth/invalid-credential":"WhatsApp ou senha incorretos.","auth/email-already-in-use":"Este WhatsApp já tem conta. Use “Entrar”.","auth/weak-password":"Senha fraca: use pelo menos 6 caracteres.","auth/too-many-requests":"Muitas tentativas. Aguarde um pouco.","auth/network-request-failed":"Sem conexão com a internet.","permission-denied":"Sem permissão para essa ação."}[e.code]||("Erro: "+(e.code||e.message)));
+const wdig=s=>{let d=String(s).replace(/\D/g,"");if(d.length===10||d.length===11)d="55"+d;return(d.length===12||d.length===13)?d:""};
+const CATS=["Hortifruti","Açougue e peixaria","Padaria","Frios e laticínios","Mercearia","Biscoitos e doces","Bebidas","Limpeza","Higiene e beleza","Congelados","Pet","Bazar e utilidades","Bomboniere","Outros"];
+let MID=new URLSearchParams(location.search).get("m")||"";try{MID=MID||localStorage.getItem("ng_m")||""}catch(e){}
+let M=null,CFG={},C=null,U=null,prods=[],cart={},shopCat="Todas",orders=[],photos={},am="in",signingUp=false,ready=null;
+const col=n=>collection(db,"markets",MID,n);
+function show(v){["vM","vAuth","vApp"].forEach(x=>$(x).classList.toggle("hide",x!==v));if(v!=="vApp")$("cartbar").classList.add("hide")}
+
+async function loadMarket(){
+  try{const s=await getDoc(doc(db,"markets",MID));if(!s.exists()||!s.data().active){M=null;$("mm").textContent="Mercado não encontrado ou desativado.";return false}
+    M=s.data();const c=M.colors||{},r=document.documentElement.style;r.setProperty("--ac",c.primary||"#1F7A4D");r.setProperty("--acink",c.onPrimary||"#fff");r.setProperty("--warn",c.accent||"#C2410C");
+    if(M.font)document.body.style.fontFamily=M.font;document.title=M.name;setManifest();
+    $("bi").textContent=$("hi").textContent=M.icon||"🛒";$("bn").textContent=$("hn").textContent=M.name;try{localStorage.setItem("ng_m",MID)}catch(e){}return true}
+  catch(e){$("mm").textContent=errTxt(e);return false}
+}
+function route(){if(!M){show("vM");return}U?enter():show("vAuth")}
+$("mb").onclick=async()=>{MID=$("mc").value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");if(!MID)return;$("mm").textContent="";if(await loadMarket())route()};
+ready=MID?loadMarket():Promise.resolve(false);
+onAuthStateChanged(auth,async u=>{U=u;await ready;if(signingUp)return;route()});
+
+document.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{am=b.dataset.am;document.querySelectorAll("[data-am]").forEach(x=>x.classList.toggle("on",x===b));$("upf").classList.toggle("hide",am!=="up");$("ab").textContent=am==="up"?"Criar conta":"Entrar";$("ap").autocomplete=am==="up"?"new-password":"current-password";$("am").textContent=""});
+$("ab").onclick=async()=>{
+  const w=wdig($("aw").value),pw=$("ap").value,msg=t=>$("am").textContent=t;msg("");
+  if(!w){msg("Informe o WhatsApp com DDD, por exemplo (11) 91234-5678.");return}
+  const email=w+"@cliente.nextgen.app";$("ab").disabled=true;
+  try{
+    if(am==="up"){
+      const n=$("an").value.trim(),s=$("as").value.trim();if(!n||!s){msg("Informe nome e sobrenome.");return}
+      signingUp=true;const cr=await createUserWithEmailAndPassword(auth,email,pw);
+      C={nome:n,sobrenome:s,whatsapp:w};await setDoc(doc(db,"customers",cr.user.uid),C);U=cr.user;signingUp=false;await enter()
+    }else await signInWithEmailAndPassword(auth,email,pw)
+  }catch(e){signingUp=false;msg(errTxt(e))}finally{$("ab").disabled=false}
+};
+$("ap").onkeydown=e=>{if(e.key==="Enter")$("ab").click()};
+$("out").onclick=()=>{C=null;cart={};signOut(auth)};
+
+async function enter(){
+  try{
+    if(!C){const s=await getDoc(doc(db,"customers",U.uid));if(!s.exists()){alert("Cadastro incompleto. Crie sua conta novamente.");signOut(auth);return}C=s.data()}
+    const [ps,cf]=await Promise.all([getDocs(col("products")),getDoc(doc(db,"markets",MID,"config","loja"))]);
+    prods=ps.docs.map(d=>({id:d.id,...d.data()}));CFG=cf.exists()?cf.data():{};
+    $("hw").textContent="Olá, "+C.nome;show("vApp");renderShop();await loadOrders()
+  }catch(e){alert(errTxt(e))}
+}
+function tab(t){["loja","ped"].forEach(x=>$(x).classList.toggle("hide",x!==t));document.querySelectorAll("[data-t]").forEach(b=>b.classList.toggle("on",b.dataset.t===t));renderShop();if(t==="ped")loadOrders()}
+document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>tab(b.dataset.t));
+
+const match=(p,q,c)=>(c==="Todas"||p.cat===c)&&(!q||(p.name+" "+p.vars.map(v=>v.n).join(" ")).toLowerCase().includes(q.toLowerCase()));
+function vline(p,v,i){const k=p.id+"|"+i,n=cart[k]||0,av=v.s==null?Infinity:v.s,gone=p.out||av<=0;
+  return '<div class="v"><span>'+(v.n?esc(v.n):"Padrão")+' · '+(p.old&&p.promo?'<span class="old">'+money(p.old)+'</span>':"")+'<span class="pr">'+money(v.p)+'</span></span>'+(gone?'<span class="meta">Indisponível</span>':'<div class="qty">'+(n?'<button class="m" aria-label="Diminuir" data-m="'+k+'">−</button><span>'+n+'</span>':"")+(n<av?'<button aria-label="Adicionar" data-a="'+k+'">+</button>':"")+'</div>')+'</div>'}
+function renderShop(){
+  const q=$("q").value,home=shopCat==="Todas"&&!q,pr=prods.filter(p=>p.promo&&!p.out);
+  $("promoBox").innerHTML=home&&pr.length?'<div class="card"><p class="sec">PROMOÇÕES DE HOJE</p><div class="grid">'+pr.map(p=>'<div class="pc">'+(p.hasPhoto?'<img class="img" data-ph="'+p.id+'" alt="'+esc(p.name)+'"'+(photos[p.id]?' src="'+photos[p.id]+'"':"")+'>':"")+'<div class="pn">'+esc(p.name)+'</div>'+p.vars.map((v,i)=>vline(p,v,i)).join("")+'</div>').join("")+'</div></div>':"";
+  $("chips").innerHTML=["Todas"].concat(CATS).map(c=>'<button class="chip'+(c===shopCat?" on":"")+'" data-sc="'+esc(c)+'">'+esc(c)+'</button>').join("");
+  const l=prods.filter(p=>match(p,q,shopCat)&&!(home&&p.promo&&!p.out));
+  $("shop").innerHTML=l.length?'<div class="card">'+l.map(p=>'<div class="p"><div class="pn">'+esc(p.name)+(p.out?'<span class="tag w">em falta</span>':"")+'</div><div class="meta">'+esc(p.cat)+' · por '+esc(p.un)+'</div>'+p.vars.map((v,i)=>vline(p,v,i)).join("")+'</div>').join("")+'</div>':'<div class="empty">Nenhum produto encontrado.</div>';
+  let it=0,t=0;Object.keys(cart).forEach(k=>{const s=k.split("|"),p=prods.find(x=>x.id===s[0]);if(p&&p.vars[s[1]]){it+=cart[k];t+=cart[k]*p.vars[s[1]].p}});
+  $("cartbar").classList.toggle("hide",!it||$("loja").classList.contains("hide")||$("vApp").classList.contains("hide"));$("ci").textContent=it+(it===1?" item":" itens");$("ct").textContent=money(t);
+  document.querySelectorAll("img[data-ph]").forEach(async im=>{const id=im.dataset.ph;if(photos[id]){im.src=photos[id];return}try{const s=await getDoc(doc(db,"markets",MID,"photos",id));if(s.exists()){photos[id]=s.data().data;im.src=photos[id]}}catch(e){}})}
+$("q").oninput=renderShop;
+
+function checkout(){
+  let t=0;Object.keys(cart).forEach(k=>{const s=k.split("|"),p=prods.find(x=>x.id===s[0]);if(p&&p.vars[s[1]])t+=cart[k]*p.vars[s[1]].p});
+  $("sheet").innerHTML='<h2>Finalizar pedido · '+money(t)+'</h2><label>Como receber<select id="cm"><option>Retirada no mercado</option>'+(CFG.deliver?"<option>Entrega</option>":"")+'</select></label><label>Pagamento<select id="cp"><option>Pix</option><option>Pagar na retirada/entrega</option></select></label><label>Observação (opcional)<input id="co" type="text" placeholder="Ex.: endereço, troco, horário"></label><div class="meta" id="cx" style="margin-bottom:12px"></div><div class="bar"><button class="btn" id="cf" type="button">Confirmar pedido</button><button class="btn ghost" data-close="1" type="button">Voltar</button></div>';
+  const sync=()=>$("cx").textContent=$("cp").value==="Pix"?"Depois de confirmar, você verá a chave Pix e poderá enviar o comprovante.":"O pagamento será feito ao receber.";$("cp").onchange=sync;sync();
+  $("cf").onclick=async()=>{
+    const items=[];let tot=0,ok=true;Object.keys(cart).forEach(k=>{const s=k.split("|"),p=prods.find(x=>x.id===s[0]),v=p&&p.vars[s[1]],q=cart[k];if(!v||p.out||(v.s!=null&&v.s<q)){ok=false;return}items.push({pid:p.id,vi:+s[1],name:p.name,v:v.n,q,p:v.p});tot+=q*v.p});
+    if(!ok||!items.length){$("cx").textContent="Algum item ficou sem estoque. Volte e revise o carrinho.";return}
+    $("cf").disabled=true;
+    try{const id=doc(col("orders")).id,cr=doc(db,"markets",MID,"counters","orders");let num=0;
+      await runTransaction(db,async tx=>{const s=await tx.get(cr);num=s.exists()?s.data().n+1:1;tx.set(cr,{n:num});
+        tx.set(doc(db,"markets",MID,"orders",id),{num,customerUid:U.uid,nome:C.nome,sobrenome:C.sobrenome,whatsapp:C.whatsapp,items,total:tot,mode:$("cm").value,pay:$("cp").value,obs:$("co").value.trim(),paid:false,status:"novo",hasProof:false,ts:Date.now()})});
+      cart={};await loadOrders();
+      $("sheet").innerHTML='<h2>Pedido '+oid(num)+' enviado!</h2><p>O mercado vai receber seu pedido. '+($("cp")?($("cp").value==="Pix"?"Faça o Pix e envie o comprovante em “Meus pedidos”.":"Você paga ao receber."):"")+'</p><button class="btn" data-goto="ped" style="width:100%" type="button">Ver meus pedidos</button>'
+    }catch(e){$("cx").textContent=errTxt(e);$("cf").disabled=false}
+  }
+}
+async function loadOrders(){try{const s=await getDocs(query(col("orders"),where("customerUid","==",U.uid)));orders=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.num-a.num);renderOrders()}catch(e){$("olist").innerHTML='<div class="empty">'+esc(errTxt(e))+'</div>'}}
+function renderOrders(){
+  $("olist").innerHTML=orders.length?orders.map(o=>{const st={novo:"aguardando o mercado",aceito:"em separação",concluido:"concluído"}[o.status]||o.status;
+    const pix=o.pay==="Pix"&&!o.paid&&o.status!=="concluido";
+    return '<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><div><span class="pn">Pedido '+oid(o.num)+'</span><span class="tag">'+st+'</span><span class="tag '+(o.paid?"g":"w")+'">'+(o.paid?"PAGO":"NÃO PAGO")+'</span></div><div class="pr">'+money(o.total)+'</div></div><div class="meta">'+fdt(o.ts)+' · '+esc(o.mode)+' · '+esc(o.pay)+'</div><div class="meta" style="margin:6px 0">'+o.items.map(i=>i.q+"× "+esc(i.name)+(i.v?" ("+esc(i.v)+")":"")).join(" · ")+'</div>'
+    +(pix?(CFG.pix?'<div class="meta">Chave Pix: <b>'+esc(CFG.pix)+'</b> <button class="btn ghost sm" data-copy="'+esc(CFG.pix)+'" type="button">Copiar</button></div>':'<div class="meta">O mercado informará a chave Pix.</div>')+(o.hasProof?'<span class="tag g">comprovante enviado</span>':'<label style="margin:10px 0 0">Enviar comprovante do Pix (foto)<input type="file" accept="image/*" data-proof="'+o.id+'"></label>'):"")+'</div>'}).join(""):'<div class="empty">Você ainda não fez pedidos.</div>'}
+function compress(file,cb){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);let u=c.toDataURL("image/jpeg",.6);if(u.length>700000)u=c.toDataURL("image/jpeg",.4);cb(u)};im.src=fr.result};fr.readAsDataURL(file)}
+document.addEventListener("change",e=>{const id=e.target.dataset&&e.target.dataset.proof;if(!id||!e.target.files[0])return;e.target.disabled=true;
+  compress(e.target.files[0],async u=>{try{await setDoc(doc(db,"markets",MID,"proofs",id),{customerUid:U.uid,data:u,ts:Date.now()});await updateDoc(doc(db,"markets",MID,"orders",id),{hasProof:true});await loadOrders()}catch(er){alert(errTxt(er));e.target.disabled=false}})});
+document.addEventListener("click",async e=>{const t=e.target.closest("button");if(!t)return;const d=t.dataset;
+  if(d.sc){shopCat=d.sc;renderShop()}
+  else if(d.a){cart[d.a]=(cart[d.a]||0)+1;renderShop()}
+  else if(d.m){cart[d.m]=Math.max(0,(cart[d.m]||0)-1);if(!cart[d.m])delete cart[d.m];renderShop()}
+  else if(d.copy){try{await navigator.clipboard.writeText(d.copy);t.textContent="Copiado!"}catch(er){}}
+  else if(d.close)$("modal").classList.add("hide");
+  else if(d.goto){$("modal").classList.add("hide");tab(d.goto)}});
+$("go").onclick=()=>{checkout();$("modal").classList.remove("hide")};
+
+function icon(sz){const c=document.createElement("canvas");c.width=c.height=sz;const x=c.getContext("2d");x.fillStyle=(M.colors&&M.colors.primary)||"#1F7A4D";x.fillRect(0,0,sz,sz);x.font=Math.round(sz*.5)+"px sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillText(M.icon||"🛒",sz/2,sz/2+sz*.03);return c.toDataURL("image/png")}
+function setManifest(){try{const p=(M.colors&&M.colors.primary)||"#1F7A4D",a=new URL("./",location.href);a.search="?m="+MID;
+  const m={id:"cliente-"+MID,name:"Meu Mercado",short_name:"Meu Mercado",start_url:a.href,scope:new URL("./",location.href).href,display:"standalone",orientation:"portrait",background_color:"#FAFAF7",theme_color:p,lang:"pt-BR",icons:[{src:icon(192),sizes:"192x192",type:"image/png",purpose:"any"},{src:icon(512),sizes:"512x512",type:"image/png",purpose:"any"}]};
+  document.querySelector("link[rel=manifest]").href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/manifest+json"}));
+  document.querySelector("meta[name=theme-color]").content=p;document.querySelector("link[rel=apple-touch-icon]").href=icon(192)}catch(e){}}
+let ip=null;const insts=()=>document.querySelectorAll(".inst");
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();ip=e;insts().forEach(b=>b.classList.remove("hide"))});
+insts().forEach(b=>b.onclick=async()=>{if(!ip)return;ip.prompt();await ip.userChoice;ip=null;insts().forEach(x=>x.classList.add("hide"))});
+addEventListener("appinstalled",()=>insts().forEach(x=>x.classList.add("hide")));
+if(/iphone|ipad/i.test(navigator.userAgent)&&!navigator.standalone)$("ios").classList.remove("hide");
+if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
