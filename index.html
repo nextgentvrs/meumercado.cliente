@@ -49,6 +49,15 @@ input[type=file]{padding:9px 12px;height:auto}
 .sheet{background:var(--card);width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:20px}
 .msg{font-size:14px;color:var(--warn);min-height:20px;margin-top:8px}
 .empty{color:var(--mut);text-align:center;padding:24px 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}
+.tile{border:1px solid var(--line);border-radius:14px;padding:8px;background:var(--bg);display:flex;flex-direction:column;gap:3px}
+.timg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;background:var(--chip);display:block}
+.tn{font-weight:700;font-size:13px;line-height:1.2;min-height:2.4em;overflow:hidden}
+.tp{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.tile .qty{justify-content:flex-end;margin-top:auto}
+.vid{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:12px;background:#000}
+.vid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .8s}
+.vid img.on{opacity:1;animation:kb 6s ease-out forwards}@keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
+.vbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.3)}.vbar i{display:block;height:100%;width:0;background:#fff}
 .hide{display:none!important}.login{max-width:400px;margin:8vh auto 0}
 .bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
 </style>
@@ -73,7 +82,7 @@ input[type=file]{padding:9px 12px;height:auto}
 <div id="vApp" class="hide">
 <div class="top"><div><span class="logo" id="hi"></span><h1 style="display:inline;vertical-align:middle" id="hn"></h1><div class="meta" id="hw"></div></div><div class="bar" style="margin:0"><button class="btn sm inst hide" type="button">Instalar app</button><button class="btn ghost sm" id="out" type="button">Sair</button></div></div>
 <div class="tabs"><button class="on" data-t="loja" type="button">Loja</button><button data-t="ped" type="button">Meus pedidos</button></div>
-<section id="loja"><div id="promoBox"></div>
+<section id="loja"><div id="noticeBox"></div><div id="dailyBox"></div><div id="promoBox"></div>
 <label><span>Buscar produto</span><input id="q" type="search" placeholder="O que você procura?"></label>
 <div class="chips" id="chips"></div><div id="shop"></div></section>
 <section id="ped" class="hide"><div id="olist"></div></section>
@@ -100,6 +109,7 @@ const CATS=["Hortifruti","Açougue e peixaria","Padaria","Frios e laticínios","
 let MID=new URLSearchParams(location.search).get("m")||"";try{MID=MID||localStorage.getItem("ng_m")||""}catch(e){}
 let M=null,CFG={},C=null,U=null,prods=[],cart={},shopCat="Todas",orders=[],photos={},am="in",signingUp=false,ready=null;
 const col=n=>collection(db,"markets",MID,n);
+let notices=[],daily=null,dt=null;const todayKey=()=>new Date().toLocaleDateString("sv-SE");
 function show(v){["vM","vAuth","vApp"].forEach(x=>$(x).classList.toggle("hide",x!==v));if(v!=="vApp")$("cartbar").classList.add("hide")}
 
 async function loadMarket(){
@@ -133,9 +143,9 @@ $("out").onclick=()=>{C=null;cart={};signOut(auth)};
 async function enter(){
   try{
     if(!C){const s=await getDoc(doc(db,"customers",U.uid));if(!s.exists()){alert("Cadastro incompleto. Crie sua conta novamente.");signOut(auth);return}C=s.data()}
-    const [ps,cf]=await Promise.all([getDocs(col("products")),getDoc(doc(db,"markets",MID,"config","loja"))]);
-    prods=ps.docs.map(d=>({id:d.id,...d.data()}));CFG=cf.exists()?cf.data():{};
-    $("hw").textContent="Olá, "+C.nome;show("vApp");renderShop();await loadOrders()
+    const [ps,cf,ns,dl]=await Promise.all([getDocs(col("products")),getDoc(doc(db,"markets",MID,"config","loja")),getDocs(col("notices")).catch(()=>null),getDoc(doc(db,"markets",MID,"daily",todayKey())).catch(()=>null)]);
+    prods=ps.docs.map(d=>({id:d.id,...d.data()}));CFG=cf.exists()?cf.data():{};notices=ns?ns.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts):[];daily=dl&&dl.exists()?dl.data():null;
+    $("hw").textContent="Olá, "+C.nome;show("vApp");renderTop();renderShop();await loadOrders()
   }catch(e){alert(errTxt(e))}
 }
 function tab(t){["loja","ped"].forEach(x=>$(x).classList.toggle("hide",x!==t));document.querySelectorAll("[data-t]").forEach(b=>b.classList.toggle("on",b.dataset.t===t));renderShop();if(t==="ped")loadOrders()}
@@ -146,7 +156,7 @@ function vline(p,v,i){const k=p.id+"|"+i,n=cart[k]||0,av=v.s==null?Infinity:v.s,
   return '<div class="v"><span>'+(v.n?esc(v.n):"Padrão")+' · '+(p.old&&p.promo?'<span class="old">'+money(p.old)+'</span>':"")+'<span class="pr">'+money(v.p)+'</span></span>'+(gone?'<span class="meta">Indisponível</span>':'<div class="qty">'+(n?'<button class="m" aria-label="Diminuir" data-m="'+k+'">−</button><span>'+n+'</span>':"")+(n<av?'<button aria-label="Adicionar" data-a="'+k+'">+</button>':"")+'</div>')+'</div>'}
 function renderShop(){
   const q=$("q").value,home=shopCat==="Todas"&&!q,pr=prods.filter(p=>p.promo&&!p.out);
-  $("promoBox").innerHTML=home&&pr.length?'<div class="card"><p class="sec">PROMOÇÕES DE HOJE</p><div class="grid">'+pr.map(p=>'<div class="pc">'+(p.hasPhoto?'<img class="img" data-ph="'+p.id+'" alt="'+esc(p.name)+'"'+(photos[p.id]?' src="'+photos[p.id]+'"':"")+'>':"")+'<div class="pn">'+esc(p.name)+'</div>'+p.vars.map((v,i)=>vline(p,v,i)).join("")+'</div>').join("")+'</div></div>':"";
+  $("promoBox").innerHTML=home&&pr.length?'<div class="card"><p class="sec">PROMOÇÕES DE HOJE</p><div class="tiles">'+pr.map(p=>p.vars.map((v,i)=>tile(p,v,i)).join("")).join("")+'</div></div>':"";
   $("chips").innerHTML=["Todas"].concat(CATS).map(c=>'<button class="chip'+(c===shopCat?" on":"")+'" data-sc="'+esc(c)+'">'+esc(c)+'</button>').join("");
   const l=prods.filter(p=>match(p,q,shopCat)&&!(home&&p.promo&&!p.out));
   $("shop").innerHTML=l.length?'<div class="card">'+l.map(p=>'<div class="p"><div class="pn">'+esc(p.name)+(p.out?'<span class="tag w">em falta</span>':"")+'</div><div class="meta">'+esc(p.cat)+' · por '+esc(p.un)+'</div>'+p.vars.map((v,i)=>vline(p,v,i)).join("")+'</div>').join("")+'</div>':'<div class="empty">Nenhum produto encontrado.</div>';
@@ -199,6 +209,19 @@ addEventListener("beforeinstallprompt",e=>{e.preventDefault();ip=e;insts().forEa
 insts().forEach(b=>b.onclick=async()=>{if(!ip)return;ip.prompt();await ip.userChoice;ip=null;insts().forEach(x=>x.classList.add("hide"))});
 addEventListener("appinstalled",()=>insts().forEach(x=>x.classList.add("hide")));
 if(/iphone|ipad/i.test(navigator.userAgent)&&!navigator.standalone)$("ios").classList.remove("hide");
+
+function tile(p,v,i){const k=p.id+"|"+i,n=cart[k]||0,av=v.s==null?Infinity:v.s,gone=p.out||av<=0;
+  return '<div class="tile">'+(p.hasPhoto?'<img class="timg" data-ph="'+p.id+'" alt="'+esc(p.name)+'"'+(photos[p.id]?' src="'+photos[p.id]+'"':"")+'>':'<div class="timg"></div>')+'<div class="tn">'+esc(p.name)+'</div><div class="meta">'+(v.n?esc(v.n):"&nbsp;")+'</div><div class="tp">'+(p.old?'<span class="old">'+money(p.old)+'</span>':"")+'<span class="pr" style="color:var(--warn)">'+money(v.p)+'</span></div>'+(gone?'<div class="meta">Indisponível</div>':'<div class="qty">'+(n?'<button class="m" aria-label="Diminuir" data-m="'+k+'">−</button><span>'+n+'</span>':"")+(n<av?'<button aria-label="Adicionar" data-a="'+k+'">+</button>':"")+'</div>')+'</div>'}
+function renderTop(){
+  const rows=[];if(CFG.horario)rows.push('<div style="margin-bottom:8px"><span class="pn">Horário:</span> '+esc(CFG.horario)+'</div>');
+  notices.slice(0,3).forEach(n=>rows.push('<div style="margin-bottom:8px">'+esc(n.text)+'<div class="meta">'+fdt(n.ts)+'</div></div>'));
+  $("noticeBox").innerHTML=rows.length?'<div class="card"><p class="sec">AVISOS DO MERCADO</p>'+rows.join("")+'</div>':"";
+  $("dailyBox").innerHTML=daily&&daily.slides&&daily.slides.length?'<div class="card"><p class="sec">VÍDEO DE HOJE</p><div class="vid"><img id="va" alt=""><img id="vb" alt=""><div class="vbar"><i id="vp"></i></div></div></div>':"";
+  startDaily()}
+function startDaily(){clearInterval(dt);const d=daily;if(!d||!d.slides||!d.slides.length||!$("va"))return;
+  const a=$("va"),b=$("vb"),bar=$("vp"),n=d.slides.length,per=d.per||5;let i=0,cur=a;a.src=d.slides[0];a.classList.add("on");
+  const run=()=>{bar.style.transition="none";bar.style.width="0";requestAnimationFrame(()=>{bar.style.transition="width "+(per*n)+"s linear";bar.style.width="100%"})};run();
+  if(n>1)dt=setInterval(()=>{i=(i+1)%n;const nx=cur===a?b:a;nx.classList.remove("on");nx.src=d.slides[i];void nx.offsetWidth;nx.classList.add("on");cur.classList.remove("on");cur=nx;if(i===0)run()},per*1000)}
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 </script>
 </body>
