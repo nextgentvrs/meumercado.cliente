@@ -72,8 +72,8 @@ input[type=file]{padding:9px 12px;height:auto}
 <div id="vAuth" class="login card hide">
 <div style="margin-bottom:14px"><span class="logo" id="bi"></span><h1 style="display:inline;vertical-align:middle" id="bn"></h1></div>
 <div class="tabs"><button class="on" data-am="in" type="button">Entrar</button><button data-am="up" type="button">Criar conta</button></div>
-<div id="upf" class="hide"><label>Nome<input id="an" type="text" autocomplete="given-name"></label><label>Sobrenome<input id="as" type="text" autocomplete="family-name"></label></div>
-<label>WhatsApp (com DDD)<input id="aw" type="tel" inputmode="numeric" placeholder="(11) 91234-5678" autocomplete="tel"></label>
+<div id="upf" class="hide"><label>Nome<input id="an" type="text" autocomplete="given-name"></label><label>Sobrenome<input id="as" type="text" autocomplete="family-name"></label><label>Celular com DDD (WhatsApp)<input id="aw" type="tel" inputmode="numeric" placeholder="(11) 91234-5678" autocomplete="tel"></label><label style="flex-direction:row;align-items:flex-start;gap:10px;font-weight:400;color:var(--ink)"><input id="lg" type="checkbox" style="width:20px;height:20px;flex:none"><span style="font-size:12.5px">Concordo que o mercado use meu nome, CPF e celular para atender meus pedidos e para o programa de pontos.</span></label></div>
+<label>CPF<input id="acpf" type="text" inputmode="numeric" placeholder="000.000.000-00" autocomplete="username"></label>
 <label>Senha<input id="ap" type="password" autocomplete="current-password" placeholder="mínimo 6 caracteres"></label>
 <button class="btn" id="ab" style="width:100%" type="button">Entrar</button><div class="msg" id="am" role="alert"></div>
 <button class="btn ghost inst hide" style="width:100%;margin-top:10px" type="button">Instalar app no celular</button>
@@ -82,7 +82,7 @@ input[type=file]{padding:9px 12px;height:auto}
 <div id="vApp" class="hide">
 <div class="top"><div><span class="logo" id="hi"></span><h1 style="display:inline;vertical-align:middle" id="hn"></h1><div class="meta" id="hw"></div></div><div class="bar" style="margin:0"><button class="btn sm inst hide" type="button">Instalar app</button><button class="btn ghost sm" id="out" type="button">Sair</button></div></div>
 <div class="tabs"><button class="on" data-t="loja" type="button">Loja</button><button data-t="ped" type="button">Meus pedidos</button></div>
-<section id="loja"><div id="noticeBox"></div><div id="dailyBox"></div><div id="promoBox"></div>
+<section id="loja"><div id="fidBox"></div><div id="noticeBox"></div><div id="dailyBox"></div><div id="promoBox"></div>
 <label><span>Buscar produto</span><input id="q" type="search" placeholder="O que você procura?"></label>
 <div class="chips" id="chips"></div><div id="shop"></div></section>
 <section id="ped" class="hide"><div id="olist"></div></section>
@@ -92,6 +92,7 @@ input[type=file]{padding:9px 12px;height:auto}
 <div class="cart hide" id="cartbar"><div><span id="ci"></span><span><span id="ct"></span> <button class="btn sm" id="go" type="button">Finalizar</button></span></div></div>
 <div class="modal hide" id="modal"><div class="sheet" id="sheet"></div></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -103,13 +104,13 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"
 const money=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const oid=n=>"#"+String(n).padStart(4,"0");
 const fdt=t=>new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
-const errTxt=e=>({"auth/invalid-credential":"WhatsApp ou senha incorretos.","auth/email-already-in-use":"Este WhatsApp já tem conta. Use “Entrar”.","auth/weak-password":"Senha fraca: use pelo menos 6 caracteres.","auth/too-many-requests":"Muitas tentativas. Aguarde um pouco.","auth/network-request-failed":"Sem conexão com a internet.","permission-denied":"Sem permissão para essa ação."}[e.code]||("Erro: "+(e.code||e.message)));
+const errTxt=e=>({"auth/invalid-credential":"CPF ou senha incorretos.","auth/email-already-in-use":"Este CPF já tem conta. Use “Entrar”.","auth/weak-password":"Senha fraca: use pelo menos 6 caracteres.","auth/too-many-requests":"Muitas tentativas. Aguarde um pouco.","auth/network-request-failed":"Sem conexão com a internet.","permission-denied":"Sem permissão para essa ação."}[e.code]||("Erro: "+(e.code||e.message)));
 const wdig=s=>{let d=String(s).replace(/\D/g,"");if(d.length===10||d.length===11)d="55"+d;return(d.length===12||d.length===13)?d:""};
 const CATS=["Hortifruti","Açougue e peixaria","Padaria","Frios e laticínios","Mercearia","Biscoitos e doces","Bebidas","Limpeza","Higiene e beleza","Congelados","Pet","Bazar e utilidades","Bomboniere","Outros"];
 let MID=new URLSearchParams(location.search).get("m")||"";try{MID=MID||localStorage.getItem("ng_m")||""}catch(e){}
 let M=null,CFG={},C=null,U=null,prods=[],cart={},shopCat="Todas",orders=[],photos={},am="in",signingUp=false,ready=null;
 const col=n=>collection(db,"markets",MID,n);
-let notices=[],daily=null,dt=null;const todayKey=()=>new Date().toLocaleDateString("sv-SE");
+let notices=[],daily=null,dt=null,MEM={};const todayKey=()=>new Date().toLocaleDateString("sv-SE");
 function show(v){["vM","vAuth","vApp"].forEach(x=>$(x).classList.toggle("hide",x!==v));if(v!=="vApp")$("cartbar").classList.add("hide")}
 
 async function loadMarket(){
@@ -126,14 +127,14 @@ onAuthStateChanged(auth,async u=>{U=u;await ready;if(signingUp)return;route()});
 
 document.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{am=b.dataset.am;document.querySelectorAll("[data-am]").forEach(x=>x.classList.toggle("on",x===b));$("upf").classList.toggle("hide",am!=="up");$("ab").textContent=am==="up"?"Criar conta":"Entrar";$("ap").autocomplete=am==="up"?"new-password":"current-password";$("am").textContent=""});
 $("ab").onclick=async()=>{
-  const w=wdig($("aw").value),pw=$("ap").value,msg=t=>$("am").textContent=t;msg("");
-  if(!w){msg("Informe o WhatsApp com DDD, por exemplo (11) 91234-5678.");return}
-  const email=w+"@cliente.nextgen.app";$("ab").disabled=true;
+  const cpf=$("acpf").value.replace(/\D/g,""),w=wdig($("aw").value),pw=$("ap").value,msg=t=>$("am").textContent=t;msg("");
+  if(!cpfOk(cpf)){msg("CPF inválido. Confira os números.");return}if(am==="up"&&!w){msg("Informe o celular com DDD, por exemplo (11) 91234-5678.");return}
+  const email=cpf+"@cliente.nextgen.app";$("ab").disabled=true;
   try{
     if(am==="up"){
-      const n=$("an").value.trim(),s=$("as").value.trim();if(!n||!s){msg("Informe nome e sobrenome.");return}
+      const n=$("an").value.trim(),s=$("as").value.trim();if(!n||!s){msg("Informe nome e sobrenome.");return}if(!$("lg").checked){msg("Marque a autorização para continuar.");return}
       signingUp=true;const cr=await createUserWithEmailAndPassword(auth,email,pw);
-      C={nome:n,sobrenome:s,whatsapp:w};await setDoc(doc(db,"customers",cr.user.uid),C);U=cr.user;signingUp=false;await enter()
+      C={nome:n,sobrenome:s,cpf,whatsapp:w,consent:true,consentTs:Date.now()};await setDoc(doc(db,"customers",cr.user.uid),C);U=cr.user;signingUp=false;await enter()
     }else await signInWithEmailAndPassword(auth,email,pw)
   }catch(e){signingUp=false;msg(errTxt(e))}finally{$("ab").disabled=false}
 };
@@ -145,7 +146,9 @@ async function enter(){
     if(!C){const s=await getDoc(doc(db,"customers",U.uid));if(!s.exists()){alert("Cadastro incompleto. Crie sua conta novamente.");signOut(auth);return}C=s.data()}
     const [ps,cf,ns,dl]=await Promise.all([getDocs(col("products")),getDoc(doc(db,"markets",MID,"config","loja")),getDocs(col("notices")).catch(()=>null),getDoc(doc(db,"markets",MID,"daily",todayKey())).catch(()=>null)]);
     prods=ps.docs.map(d=>({id:d.id,...d.data()}));CFG=cf.exists()?cf.data():{};notices=ns?ns.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts):[];daily=dl&&dl.exists()?dl.data():null;
-    $("hw").textContent="Olá, "+C.nome;show("vApp");renderTop();renderShop();await loadOrders()
+    if(!C.cpf){alert("Seu cadastro é antigo. Crie a conta novamente, agora com CPF.");signOut(auth);return}
+    const mr=doc(db,"markets",MID,"members",U.uid);let ms=await getDoc(mr);if(!ms.exists()){await setDoc(mr,{nome:C.nome,sobrenome:C.sobrenome,cpf:C.cpf,celular:C.whatsapp,points:0,joinedTs:Date.now()});ms=await getDoc(mr)}MEM=ms.data();
+    hdr();renderFid();show("vApp");renderTop();renderShop();await loadOrders()
   }catch(e){alert(errTxt(e))}
 }
 function tab(t){["loja","ped"].forEach(x=>$(x).classList.toggle("hide",x!==t));document.querySelectorAll("[data-t]").forEach(b=>b.classList.toggle("on",b.dataset.t===t));renderShop();if(t==="ped")loadOrders()}
@@ -167,26 +170,35 @@ $("q").oninput=renderShop;
 
 function checkout(){
   let t=0;Object.keys(cart).forEach(k=>{const s=k.split("|"),p=prods.find(x=>x.id===s[0]);if(p&&p.vars[s[1]])t+=cart[k]*p.vars[s[1]].p});
-  $("sheet").innerHTML='<h2>Finalizar pedido · '+money(t)+'</h2><label>Como receber<select id="cm"><option>Retirada no mercado</option>'+(CFG.deliver?"<option>Entrega</option>":"")+'</select></label><label>Pagamento<select id="cp"><option>Pix</option><option>Pagar na retirada/entrega</option></select></label><label>Observação (opcional)<input id="co" type="text" placeholder="Ex.: endereço, troco, horário"></label><div class="meta" id="cx" style="margin-bottom:12px"></div><div class="bar"><button class="btn" id="cf" type="button">Confirmar pedido</button><button class="btn ghost" data-close="1" type="button">Voltar</button></div>';
-  const sync=()=>$("cx").textContent=$("cp").value==="Pix"?"Depois de confirmar, você verá a chave Pix e poderá enviar o comprovante.":"O pagamento será feito ao receber.";$("cp").onchange=sync;sync();
+  $("sheet").innerHTML='<h2>Finalizar pedido · '+money(t)+'</h2>'+((CFG.taxa||CFG.minimo||CFG.kmValor)?'<div class="meta" style="margin-bottom:10px">'+(CFG.deliver&&CFG.kmValor&&CFG.lat!=null?'Frete: mínimo '+money(CFG.taxa||0)+' ou '+money(CFG.kmValor)+' por km. ':(CFG.deliver&&CFG.taxa?'Taxa de entrega: '+money(CFG.taxa)+'. ':''))+(CFG.minimo?'Pedido mínimo: '+money(CFG.minimo)+'.':'')+'</div>':'')+'<label>Como receber<select id="cm"><option>Retirada no mercado</option>'+(CFG.deliver?"<option>Entrega</option>":"")+'</select></label><div id="dlv" class="hide"><label>Endereço de entrega (rua, número, bairro)<input id="cadr" type="text" autocomplete="street-address"></label><button class="btn ghost sm" id="cgeo" type="button">Calcular frete pela minha localização</button><div class="meta" id="cfr" style="margin:8px 0 12px"></div></div><label>Pagamento<select id="cp"><option>Pix</option><option>Pagar na retirada/entrega</option></select></label><label>Observação (opcional)<input id="co" type="text" placeholder="Ex.: endereço, troco, horário"></label><div class="meta" id="cx" style="margin-bottom:12px"></div><div class="bar"><button class="btn" id="cf" type="button">Confirmar pedido</button><button class="btn ghost" data-close="1" type="button">Voltar</button></div>';
+  const sync=()=>$("cx").textContent=$("cp").value==="Pix"?"Depois de confirmar, você verá a chave Pix e poderá enviar o comprovante.":"O pagamento será feito ao receber.";$("cp").onchange=sync;sync();LOC=null;
+  $("cm").onchange=()=>{$("dlv").classList.toggle("hide",$("cm").value!=="Entrega");LOC=null;$("cfr").textContent=""};
+  $("cgeo").onclick=()=>{if(!(CFG.lat!=null&&CFG.kmValor)){$("cfr").textContent="O mercado cobra taxa fixa de "+money(CFG.taxa||0)+".";return}
+    if(!navigator.geolocation){$("cfr").textContent="Este aparelho não oferece localização.";return}$("cfr").textContent="Obtendo localização…";
+    navigator.geolocation.getCurrentPosition(p=>{const d=Math.round(haversine(CFG.lat,CFG.lng,p.coords.latitude,p.coords.longitude)*10)/10,fee=Math.round(Math.max(CFG.taxa||0,d*CFG.kmValor)*100)/100;LOC={d,fee,lat:p.coords.latitude,lng:p.coords.longitude};
+      $("cfr").textContent=CFG.raio&&d>CFG.raio?"Fora da área de entrega (máximo "+CFG.raio+" km). Distância: "+String(d).replace(".",",")+" km.":"Distância em linha reta: "+String(d).replace(".",",")+" km · frete "+money(fee)+" · total "+money(t+fee)},()=>{$("cfr").textContent="Não consegui obter sua localização. Permita o acesso e tente de novo."},{enableHighAccuracy:true,timeout:10000})};
   $("cf").onclick=async()=>{
     const items=[];let tot=0,ok=true;Object.keys(cart).forEach(k=>{const s=k.split("|"),p=prods.find(x=>x.id===s[0]),v=p&&p.vars[s[1]],q=cart[k];if(!v||p.out||(v.s!=null&&v.s<q)){ok=false;return}items.push({pid:p.id,vi:+s[1],name:p.name,v:v.n,q,p:v.p});tot+=q*v.p});
     if(!ok||!items.length){$("cx").textContent="Algum item ficou sem estoque. Volte e revise o carrinho.";return}
+    if(CFG.minimo&&tot<CFG.minimo){$("cx").textContent="O pedido mínimo deste mercado é "+money(CFG.minimo)+".";return}
+    const ent=$("cm").value==="Entrega";let taxa=0,endereco="";
+    if(ent){endereco=($("cadr").value||"").trim();if(!endereco){$("cx").textContent="Informe o endereço de entrega.";return}
+      if(CFG.lat!=null&&CFG.kmValor){if(!LOC){$("cx").textContent="Toque em “Calcular frete” para medir a distância.";return}if(CFG.raio&&LOC.d>CFG.raio){$("cx").textContent="Fora da área de entrega (máximo "+CFG.raio+" km).";return}taxa=LOC.fee}else taxa=CFG.taxa||0}
     $("cf").disabled=true;
     try{const id=doc(col("orders")).id,cr=doc(db,"markets",MID,"counters","orders");let num=0;
       await runTransaction(db,async tx=>{const s=await tx.get(cr);num=s.exists()?s.data().n+1:1;tx.set(cr,{n:num});
-        tx.set(doc(db,"markets",MID,"orders",id),{num,customerUid:U.uid,nome:C.nome,sobrenome:C.sobrenome,whatsapp:C.whatsapp,items,total:tot,mode:$("cm").value,pay:$("cp").value,obs:$("co").value.trim(),paid:false,status:"novo",hasProof:false,ts:Date.now()})});
+        tx.set(doc(db,"markets",MID,"orders",id),{num,customerUid:U.uid,nome:C.nome,sobrenome:C.sobrenome,whatsapp:C.whatsapp,items,total:tot+taxa,taxa,endereco,dist:LOC?LOC.d:null,lat:LOC?LOC.lat:null,lng:LOC?LOC.lng:null,mode:$("cm").value,pay:$("cp").value,obs:$("co").value.trim(),paid:false,status:"novo",hasProof:false,ts:Date.now()})});
       cart={};await loadOrders();
-      $("sheet").innerHTML='<h2>Pedido '+oid(num)+' enviado!</h2><p>O mercado vai receber seu pedido. '+($("cp")?($("cp").value==="Pix"?"Faça o Pix e envie o comprovante em “Meus pedidos”.":"Você paga ao receber."):"")+'</p><button class="btn" data-goto="ped" style="width:100%" type="button">Ver meus pedidos</button>'
+      $("sheet").innerHTML='<h2>Pedido '+oid(num)+' enviado!</h2><p>O mercado vai receber seu pedido. '+($("cp")?($("cp").value==="Pix"?"Faça o Pix e envie o comprovante em “Meus pedidos”.":"Você paga ao receber."):"")+'</p>'+(pixQ()&&$("cp").value==="Pix"?'<button class="btn" data-qr="'+id+'" style="width:100%;margin-bottom:8px" type="button">Pagar com QR code Pix</button>':'')+'<button class="btn ghost" data-goto="ped" style="width:100%" type="button">Ver meus pedidos</button>'
     }catch(e){$("cx").textContent=errTxt(e);$("cf").disabled=false}
   }
 }
-async function loadOrders(){try{const s=await getDocs(query(col("orders"),where("customerUid","==",U.uid)));orders=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.num-a.num);renderOrders()}catch(e){$("olist").innerHTML='<div class="empty">'+esc(errTxt(e))+'</div>'}}
+async function loadOrders(){try{const s=await getDocs(query(col("orders"),where("customerUid","==",U.uid)));orders=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.num-a.num);renderOrders();try{const ms=await getDoc(doc(db,"markets",MID,"members",U.uid));if(ms.exists()){MEM=ms.data();hdr();renderFid()}}catch(e){}}catch(e){$("olist").innerHTML='<div class="empty">'+esc(errTxt(e))+'</div>'}}
 function renderOrders(){
   $("olist").innerHTML=orders.length?orders.map(o=>{const st={novo:"aguardando o mercado",aceito:"em separação",concluido:"concluído"}[o.status]||o.status;
     const pix=o.pay==="Pix"&&!o.paid&&o.status!=="concluido";
     return '<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><div><span class="pn">Pedido '+oid(o.num)+'</span><span class="tag">'+st+'</span><span class="tag '+(o.paid?"g":"w")+'">'+(o.paid?"PAGO":"NÃO PAGO")+'</span></div><div class="pr">'+money(o.total)+'</div></div><div class="meta">'+fdt(o.ts)+' · '+esc(o.mode)+' · '+esc(o.pay)+'</div><div class="meta" style="margin:6px 0">'+o.items.map(i=>i.q+"× "+esc(i.name)+(i.v?" ("+esc(i.v)+")":"")).join(" · ")+'</div>'
-    +(pix?(CFG.pix?'<div class="meta">Chave Pix: <b>'+esc(CFG.pix)+'</b> <button class="btn ghost sm" data-copy="'+esc(CFG.pix)+'" type="button">Copiar</button></div>':'<div class="meta">O mercado informará a chave Pix.</div>')+(o.hasProof?'<span class="tag g">comprovante enviado</span>':'<label style="margin:10px 0 0">Enviar comprovante do Pix (foto)<input type="file" accept="image/*" data-proof="'+o.id+'"></label>'):"")+'</div>'}).join(""):'<div class="empty">Você ainda não fez pedidos.</div>'}
+    +(pix?(CFG.pix?'<div class="meta">Chave Pix: <b>'+esc(CFG.pixexib||CFG.pix)+'</b> <button class="btn ghost sm" data-copy="'+esc(CFG.pixcopia||CFG.pix)+'" type="button">Copiar chave</button></div>':'<div class="meta">O mercado informará a chave Pix.</div>')+(pixQ()?'<div class="bar"><button class="btn sm" data-qr="'+o.id+'" type="button">Pagar com QR code ('+money(o.total)+')</button></div>':'')+(o.hasProof?'<span class="tag g">comprovante enviado</span>':'<label style="margin:10px 0 0">Enviar comprovante do Pix (foto)<input type="file" accept="image/*" data-proof="'+o.id+'"></label>'):"")+'<div class="bar"><button class="btn ghost sm" data-rep="'+o.id+'" type="button">Pedir de novo</button></div></div>'}).join(""):'<div class="empty">Você ainda não fez pedidos.</div>'}
 function compress(file,cb){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);let u=c.toDataURL("image/jpeg",.6);if(u.length>700000)u=c.toDataURL("image/jpeg",.4);cb(u)};im.src=fr.result};fr.readAsDataURL(file)}
 document.addEventListener("change",e=>{const id=e.target.dataset&&e.target.dataset.proof;if(!id||!e.target.files[0])return;e.target.disabled=true;
   compress(e.target.files[0],async u=>{try{await setDoc(doc(db,"markets",MID,"proofs",id),{customerUid:U.uid,data:u,ts:Date.now()});await updateDoc(doc(db,"markets",MID,"orders",id),{hasProof:true});await loadOrders()}catch(er){alert(errTxt(er));e.target.disabled=false}})});
@@ -194,7 +206,9 @@ document.addEventListener("click",async e=>{const t=e.target.closest("button");i
   if(d.sc){shopCat=d.sc;renderShop()}
   else if(d.a){cart[d.a]=(cart[d.a]||0)+1;renderShop()}
   else if(d.m){cart[d.m]=Math.max(0,(cart[d.m]||0)-1);if(!cart[d.m])delete cart[d.m];renderShop()}
-  else if(d.copy){try{await navigator.clipboard.writeText(d.copy);t.textContent="Copiado!"}catch(er){}}
+  else if(d.qr){const o=orders.find(x=>x.id===d.qr),pl=pixPayload(CFG.pix,CFG.pixnome,CFG.pixcidade,o.total,"PED"+String(o.num).padStart(4,"0"));$("sheet").innerHTML='<h2>Pague com Pix</h2><div class="meta" style="margin-bottom:8px">No app do seu banco, escolha Pix e leia o QR code. O valor já vem preenchido: <b>'+money(o.total)+'</b>.</div><div id="qrc" style="display:flex;justify-content:center;background:#fff;padding:14px;border-radius:12px"></div><div class="meta" style="margin-top:12px">Recebedor</div><div class="pn">'+esc(CFG.pixnome)+'</div><div class="meta" style="margin-top:8px">Chave Pix · toque para copiar</div><button class="btn ghost" data-copy="'+esc(CFG.pixcopia||CFG.pix)+'" style="width:100%;margin-bottom:10px" type="button">'+esc(CFG.pixexib||CFG.pix)+'</button><div class="bar"><button class="btn" data-copy="'+esc(pl)+'" type="button">Copiar Pix copia e cola</button><button class="btn ghost" data-close="1" type="button">Fechar</button></div><div class="meta" style="margin-top:10px">Depois de pagar, envie o comprovante em “Meus pedidos”.</div>';$("modal").classList.remove("hide");if(window.QRCode)new QRCode($("qrc"),{text:pl,width:220,height:220,correctLevel:QRCode.CorrectLevel.M});else $("qrc").textContent="QR indisponível sem internet. Use o copia e cola."}
+  else if(d.copy){try{await navigator.clipboard.writeText(d.copy);const old=t.textContent;t.textContent="Copiado!";setTimeout(()=>t.textContent=old,1500)}catch(er){}}
+  else if(d.rep){const o=orders.find(x=>x.id===d.rep);let add=0;o.items.forEach(i=>{const p=prods.find(x=>x.id===i.pid);if(!p||p.out||!p.vars[i.vi])return;const v=p.vars[i.vi],k=i.pid+"|"+i.vi,q=Math.min(i.q,(v.s==null?Infinity:v.s)-(cart[k]||0));if(q>0){cart[k]=(cart[k]||0)+q;add++}});tab("loja");if(!add)alert("Esses produtos não estão disponíveis agora.")}
   else if(d.close)$("modal").classList.add("hide");
   else if(d.goto){$("modal").classList.add("hide");tab(d.goto)}});
 $("go").onclick=()=>{checkout();$("modal").classList.remove("hide")};
@@ -211,7 +225,7 @@ addEventListener("appinstalled",()=>insts().forEach(x=>x.classList.add("hide")))
 if(/iphone|ipad/i.test(navigator.userAgent)&&!navigator.standalone)$("ios").classList.remove("hide");
 
 function tile(p,v,i){const k=p.id+"|"+i,n=cart[k]||0,av=v.s==null?Infinity:v.s,gone=p.out||av<=0;
-  return '<div class="tile">'+(p.hasPhoto?'<img class="timg" data-ph="'+p.id+'" alt="'+esc(p.name)+'"'+(photos[p.id]?' src="'+photos[p.id]+'"':"")+'>':'<div class="timg"></div>')+'<div class="tn">'+esc(p.name)+'</div><div class="meta">'+(v.n?esc(v.n):"&nbsp;")+'</div><div class="tp">'+(p.old?'<span class="old">'+money(p.old)+'</span>':"")+'<span class="pr" style="color:var(--warn)">'+money(v.p)+'</span></div>'+(gone?'<div class="meta">Indisponível</div>':'<div class="qty">'+(n?'<button class="m" aria-label="Diminuir" data-m="'+k+'">−</button><span>'+n+'</span>':"")+(n<av?'<button aria-label="Adicionar" data-a="'+k+'">+</button>':"")+'</div>')+'</div>'}
+  return '<div class="tile">'+(p.hasPhoto?'<img class="timg" data-ph="'+p.id+'" alt="'+esc(p.name)+'"'+(photos[p.id]?' src="'+photos[p.id]+'"':"")+'>':'<div class="timg"></div>')+'<div class="tn">'+esc(p.name)+'</div><div class="meta">'+(v.n?esc(v.n):"&nbsp;")+'</div><div class="tp">'+(p.old?'<span class="old">'+money(p.old)+'</span>':"")+'<span class="pr" style="color:var(--warn)">'+money(v.p)+'</span></div>'+(p.mult>1?'<div class="meta" style="color:var(--ac);font-weight:700">'+p.mult+'× pontos</div>':'')+(gone?'<div class="meta">Indisponível</div>':'<div class="qty">'+(n?'<button class="m" aria-label="Diminuir" data-m="'+k+'">−</button><span>'+n+'</span>':"")+(n<av?'<button aria-label="Adicionar" data-a="'+k+'">+</button>':"")+'</div>')+'</div>'}
 function renderTop(){
   const rows=[];if(CFG.horario)rows.push('<div style="margin-bottom:8px"><span class="pn">Horário:</span> '+esc(CFG.horario)+'</div>');
   notices.slice(0,3).forEach(n=>rows.push('<div style="margin-bottom:8px">'+esc(n.text)+'<div class="meta">'+fdt(n.ts)+'</div></div>'));
@@ -222,6 +236,19 @@ function startDaily(){clearInterval(dt);const d=daily;if(!d||!d.slides||!d.slide
   const a=$("va"),b=$("vb"),bar=$("vp"),n=d.slides.length,per=d.per||5;let i=0,cur=a;a.src=d.slides[0];a.classList.add("on");
   const run=()=>{bar.style.transition="none";bar.style.width="0";requestAnimationFrame(()=>{bar.style.transition="width "+(per*n)+"s linear";bar.style.width="100%"})};run();
   if(n>1)dt=setInterval(()=>{i=(i+1)%n;const nx=cur===a?b:a;nx.classList.remove("on");nx.src=d.slides[i];void nx.offsetWidth;nx.classList.add("on");cur.classList.remove("on");cur=nx;if(i===0)run()},per*1000)}
+
+const cpfOk=c=>{if(c.length!==11||/^(\d)\1{10}$/.test(c))return false;for(let t=9;t<11;t++){let s=0;for(let i=0;i<t;i++)s+=+c[i]*(t+1-i);if((s*10)%11%10!==+c[t])return false}return true};
+$("acpf").oninput=e=>{let v=e.target.value.replace(/\D/g,"").slice(0,11);v=v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");e.target.value=v};
+const fidOn=()=>CFG.fid&&CFG.fid.on;
+function hdr(){$("hw").textContent="Olá, "+C.nome+(fidOn()?" · "+(MEM.points||0)+" pontos":"")}
+function renderFid(){const bon=fidOn()&&CFG.fid.resPts&&CFG.fid.resVal?Math.floor((MEM.points||0)/CFG.fid.resPts)*CFG.fid.resVal:0;$("fidBox").innerHTML=fidOn()?'<div class="card"><p class="sec">PROGRAMA DE PONTOS</p><div class="pr" style="font-size:22px">'+(MEM.points||0)+' pontos</div><div class="meta">A cada R$ 1 em compras você ganha '+(CFG.fid.base||1)+' ponto(s). Produtos com selo “× pontos” rendem mais.'+(CFG.fid.resPts&&CFG.fid.resVal?' A cada '+CFG.fid.resPts+' pontos você ganha '+money(CFG.fid.resVal)+' de bônus'+(bon?' · você tem '+money(bon)+' de bônus para usar no caixa':'')+'.':'')+'</div></div>':""}
+
+let LOC=null;
+const haversine=(a,b,c,d)=>{const r=x=>x*Math.PI/180,R=6371,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+const pixQ=()=>CFG.pix&&CFG.pixnome&&CFG.pixcidade;
+function crc16(s){let c=0xFFFF;for(let i=0;i<s.length;i++){c^=s.charCodeAt(i)<<8;for(let j=0;j<8;j++)c=(c&0x8000)?((c<<1)^0x1021)&0xFFFF:(c<<1)&0xFFFF}return c.toString(16).toUpperCase().padStart(4,"0")}
+function pixPayload(key,name,city,amount,txid){const tl=(i,v)=>i+String(v.length).padStart(2,"0")+v,cl=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9 ]/g,"").toUpperCase();
+  const p=tl("00","01")+tl("01","11")+tl("26",tl("00","br.gov.bcb.pix")+tl("01",key))+tl("52","0000")+tl("53","986")+(amount>0?tl("54",amount.toFixed(2)):"")+tl("58","BR")+tl("59",cl(name).slice(0,25))+tl("60",cl(city).slice(0,15))+tl("62",tl("05",txid||"***"))+"6304";return p+crc16(p)}
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 </script>
 </body>
